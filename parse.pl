@@ -25,22 +25,11 @@ while (<INF>) {
   my $id;
   if ($flag eq "<=" && $rest =~ /\bid=(\S+)\b/) { 
     print MESSAGE_INS makeInsert('message', 
-      {
-        created => $timestamp, 
-        int_id => $messageId, 
-        id => ($id = $1), 
-        str => $messageBody
-      });
+      { created => $timestamp, int_id => $messageId, id => ($id = $1), str => $messageBody });
   }
   unless ($id) {
     print LOG_INS makeInsert('log',
-      {
-        created => $timestamp,
-        int_id => $messageId,
-        str => $messageBody,
-        address => $email
-      }
-    );
+      { created => $timestamp, int_id => $messageId, str => $messageBody, address => $email });
   }
 
 }
@@ -48,6 +37,8 @@ close INF;
 close ERR;
 close MESSAGE_INS;
 close LOG_INS;
+$dbh->commit;
+$dbh->disconnect;
 
 sub makeInsert {
   my $tableName = shift;
