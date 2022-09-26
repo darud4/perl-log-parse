@@ -1,15 +1,16 @@
 use strict;
+use warnings;
 use DBI;
 
 my $config = readConfig();
 
-my $dbh = DBI->connect("dbi:Pg:dbname=logparser", 'logparseruser', 'password4log', {AutoCommit => 0});
+my $dbh = DBI->connect("dbi:Pg:dbname=logparser", 'logparseruser', 'password4log', {AutoCommit => 0, RaiseError => 1});
 my $filename = shift || 'out';
 
 open INF, $filename;
-open MESSAGE_INS, ">>$filename.message.ins";
-open LOG_INS, ">>$filename.log.ins";
-open ERR, ">>$filename.err";
+open MESSAGE_INS, ">$filename.message.ins";
+open LOG_INS, ">$filename.log.ins";
+open ERR, ">$filename.err";
 
 while (<INF>) {
   chomp;
@@ -23,20 +24,20 @@ while (<INF>) {
   my ($messageId, $flag, $email, $rest) = split(/\s+/, $messageBody, 4);
   my $id;
   if ($flag eq "<=" && $rest =~ /\bid=(\S+)\b/) { 
-    print MESSAGE_INS makeInsert('messages', 
+    print MESSAGE_INS makeInsert('message', 
       {
-        timestamp => $timestamp, 
-        messageId => $messageId, 
+        created => $timestamp, 
+        int_id => $messageId, 
         id => ($id = $1), 
-        message => $messageBody
+        str => $messageBody
       });
   }
   unless ($id) {
     print LOG_INS makeInsert('log',
       {
-        timestamp => $timestamp,
-        messageId => $messageId,
-        message => $messageBody,
+        created => $timestamp,
+        int_id => $messageId,
+        str => $messageBody,
         address => $email
       }
     );
@@ -51,11 +52,15 @@ close LOG_INS;
 sub makeInsert {
   my $tableName = shift;
   my $payload = shift;
-  my $fields = join(",", keys %$payload);
+  my @fields = keys %$payload;
   my @placeholders = map { ":$_" } keys %$payload;
-  my $values = join (",", values %$payload);
-  my $insert = "insert into $tableName ($fields) values (".join (',', @placeholders).")";
+  my $insert = "insert into $tableName (".join(', ', @fields).") values (".join (', ', @placeholders).")";
 #  my $insert = "insert into $tableName ($fields) values ($values)";
+  my $sth = $dbh->prepare($insert);
+  for (my $i=0; $i < scalar(@fields); $i++) {
+    $sth->bind_param($placeholders[$i], $payload->{$fields[$i]});
+  }
+  $sth->execute();
   return $insert;
 }
 
