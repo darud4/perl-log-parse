@@ -4,7 +4,7 @@ use DBI;
 
 my $config = readConfig();
 
-my $dbh = DBI->connect("dbi:Pg:dbname=logparser", 'logparseruser', 'password4log', {AutoCommit => 0, RaiseError => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$config->{database}", $config->{username}, $config->{password}, {AutoCommit => 0, RaiseError => 1});
 my $filename = shift || 'out';
 
 open INF, $filename;
