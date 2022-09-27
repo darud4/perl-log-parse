@@ -5,10 +5,15 @@ use warnings;
 use CGI;
 use DBI;
 
+my $ROWS_LIMIT = 100;
+my $ROWS_LIMIT_MESSAGE = "Достигнут лимит на предельно допустимое количество строк в результате "
+  ."поиска: $ROWS_LIMIT. Дальнейшие результаты поиска не отображены.";
+
 my $q = CGI->new;
 print $q->header(-charset    => 'utf-8');
 
-my $email = $q->param('email') || 'udbbwscdnbegrmloghuf@london.com';
+my $email = $q->param('email') ;
+#|| 'udbbwscdnbegrmloghuf@london.com';
 
 my $config = {database => 'logparser', username => 'logparseruser', password => 'password4log'};
 
@@ -16,27 +21,33 @@ my $dbh = DBI->connect("dbi:Pg:dbname=$config->{database}", $config->{username},
   {AutoCommit => 0, RaiseError => 1});
 
 drawForm();
-my $data = fetchData($email);
-drawResults($data);
+if ($email) {
+  my $data = fetchData($email);
+  drawResults($data);
+}  
 
 $dbh->disconnect;
 
 sub drawForm {
-  print '<form class="log-form" name="search" action="#"><input class="log-form__input" name="recipient" type="text" placeholder="Поиск..."></form>';
+  print '<form class="log-form" name="search" action="#">'
+    .'<input class="log-form__input" name="recipient" type="text" placeholder="Поиск..."></form>';
 }
 
 sub makeTableRow {
   my $rowNum = shift;
   my $rowData = shift;
-  return "<tr class='log-table__row'><td class='log-table__cell'>$rowNum</td><td class='log-table__cell'>${$rowData}[0]</td><td>${$rowData}[1]</td></tr>"; 
+  return "<tr class='log-table__row'><td class='log-table__cell'>$rowNum</td>"
+    ."<td class='log-table__cell'>${$rowData}[0]</td><td>${$rowData}[1]</td></tr>"; 
 }
 
 sub makeTableHeader {
-    return "<tr><th>№ п/п</th><th>Дата и время запроса</th><th>Содержание запроса</th></tr>"
+  return "<tr><th class='log-table__header-cell'>№ п/п</th>"
+    ."<th class='log-table__header-cell'>Дата и время запроса</th>"
+    ."<th class='log-table__header-cell'>Содержание запроса</th></tr>";
 }
 
 sub makeLimitReached {
-  return '<tr class="log-table__row log-table__row_limit-reached"></tr>';  
+  return '<tr class="log-table__row log-table__row_limit-reached"><td colspan=3></td></tr>';  
 }
 
 sub drawResults {
@@ -44,7 +55,7 @@ sub drawResults {
   print "<table class='log-table'>";
   print makeTableHeader();
   my $count = 1;
-  for my $row (@$data) {
+  for my $row (@$tableData) {
     print makeTableRow($count, $row);
     $count++;
     if ($count == 101) {
