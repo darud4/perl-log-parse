@@ -6,7 +6,7 @@ use CGI;
 use DBI;
 
 my $q = CGI->new;
-print $q->header();
+print $q->header(-charset    => 'utf-8');
 
 my $email = $q->param('email') || 'udbbwscdnbegrmloghuf@london.com';
 
@@ -19,37 +19,37 @@ drawForm();
 my $data = fetchData($email);
 drawResults($data);
 
-#my $count = 0;
-#for my $row (@$data) {
-#    print ${$row}[0]."---".${$row}[1]."\n";
-#    $count++;
-#}
-#print "count = $count\n";
 $dbh->disconnect;
 
 sub drawForm {
-  print '<form name="search" action="#"><input name="recipient" type="text"></form>';
+  print '<form class="log-form" name="search" action="#"><input class="log-form__input" name="recipient" type="text" placeholder="Поиск..."></form>';
 }
 
 sub makeTableRow {
+  my $rowNum = shift;
   my $rowData = shift;
-  return "<tr class='logparser-table__row'><td class='logparser-table__cell'>${$rowData}[0]</td><td>${$rowData}[1]</td></tr>"; 
+  return "<tr class='log-table__row'><td class='log-table__cell'>$rowNum</td><td class='log-table__cell'>${$rowData}[0]</td><td>${$rowData}[1]</td></tr>"; 
+}
+
+sub makeTableHeader {
+    return "<tr><th>№ п/п</th><th>Дата и время запроса</th><th>Содержание запроса</th></tr>"
 }
 
 sub makeLimitReached {
-  return '<tr class="logparser-table__row_limit-reached"></tr>';  
+  return '<tr class="log-table__row log-table__row_limit-reached"></tr>';  
 }
 
 sub drawResults {
   my $tableData = shift;  
-  print "<table class='logparser-table'>";
-  my $count = 0;
+  print "<table class='log-table'>";
+  print makeTableHeader();
+  my $count = 1;
   for my $row (@$data) {
-    print makeTableRow($row);
+    print makeTableRow($count, $row);
     $count++;
     if ($count == 101) {
       print makeLimitReached();
-      break;
+      last;
     }
   }
   print "</table>";  
