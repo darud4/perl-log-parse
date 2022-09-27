@@ -30,7 +30,7 @@ $dbh->disconnect;
 
 sub drawForm {
   print '<form class="log-form" name="search" action="#">'
-    .'<input class="log-form__input" name="recipient" type="text" placeholder="Поиск..."></form>';
+    .'<input class="log-form__input" name="email" type="text" placeholder="Поиск..."></form>';
 }
 
 sub makeTableRow {
