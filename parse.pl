@@ -4,12 +4,13 @@ use DBI;
 
 my $config = readConfig();
 
-my $dbh = DBI->connect("dbi:Pg:dbname=$config->{database}", $config->{username}, $config->{password}, {AutoCommit => 0, RaiseError => 1});
+my $dbh = DBI->connect("dbi:Pg:dbname=$config->{database}", $config->{username}, $config->{password}, 
+  {AutoCommit => 0, RaiseError => 0});
 my $filename = shift || 'out';
 
 open INF, $filename;
-open MESSAGE_INS, ">$filename.message.ins";
-open LOG_INS, ">$filename.log.ins";
+open MESSAGE_ERR, ">$filename.message.err";
+open LOG_ERR, ">$filename.log.err";
 open ERR, ">$filename.err";
 
 while (<INF>) {
@@ -24,19 +25,21 @@ while (<INF>) {
   my ($messageId, $flag, $email, $rest) = split(/\s+/, $messageBody, 4);
   my $id;
   if ($flag eq "<=" && $rest =~ /\bid=(\S+)\b/) { 
-    print MESSAGE_INS makeInsert('message', 
+    makeInsert('message', 
       { created => $timestamp, int_id => $messageId, id => ($id = $1), str => $messageBody });
+    if ($dbh->err) {print MESSAGE_ERR "Error inserting in message!\n";}  
   }
   unless ($id) {
-    print LOG_INS makeInsert('log',
+    makeInsert('log',
       { created => $timestamp, int_id => $messageId, str => $messageBody, address => $email });
+    if ($dbh->err) {print LOG_ERR "Error inserting in log!\n";}  
   }
 
 }
 close INF;
 close ERR;
-close MESSAGE_INS;
-close LOG_INS;
+close MESSAGE_ERR;
+close LOG_ERR;
 $dbh->commit;
 $dbh->disconnect;
 
@@ -46,7 +49,6 @@ sub makeInsert {
   my @fields = keys %$payload;
   my @placeholders = map { ":$_" } keys %$payload;
   my $insert = "insert into $tableName (".join(', ', @fields).") values (".join (', ', @placeholders).")";
-#  my $insert = "insert into $tableName ($fields) values ($values)";
   my $sth = $dbh->prepare($insert);
   for (my $i=0; $i < scalar(@fields); $i++) {
     $sth->bind_param($placeholders[$i], $payload->{$fields[$i]});
