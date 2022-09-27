@@ -98,7 +98,7 @@ sub makeResults {
 sub fetchData {
   my $email = shift;
   my @result;
-  my $select = "select created, str from log where address = :adr order by created desc, int_id limit ".($ROWS_LIMIT+1);
+  my $select = "select created, str from log where address = :adr order by int_id, created desc limit ".($ROWS_LIMIT+1);
   my $sth = $dbh->prepare($select);
   $sth->bind_param(':adr', $email);
   $sth->execute;
