@@ -16,7 +16,7 @@ my $email = $q->param('email');
 my $config = {database => 'logparser', username => 'logparseruser', password => 'password4log'};
 
 my $dbh = DBI->connect("dbi:Pg:dbname=$config->{database}", $config->{username}, $config->{password}, 
-  {AutoCommit => 0, RaiseError => 0});
+  {AutoCommit => 0, RaiseError => 1});
 
 print $q->header(-charset    => 'utf-8');
 
